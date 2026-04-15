@@ -470,3 +470,48 @@ button:disabled {
     border-radius: 22px;
   }
 }
+
+.shell-lobby {
+  align-items: start;
+}
+
+.shell-room {
+  grid-template-columns: 1fr;
+}
+
+.room-page .room {
+  grid-column: span 1;
+}
+
+.room-headline {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.4rem);
+}
+
+.top-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.saved-room {
+  margin-bottom: 18px;
+  padding: 18px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.saved-room h3 {
+  margin: 0 0 10px;
+  font-size: 1.4rem;
+}
+
+.stack-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.room-standalone {
+  min-height: calc(100vh - 56px);
+}

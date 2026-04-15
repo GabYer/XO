@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>XO Classic Online - Room</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body class="room-page">
+    <div class="backdrop"></div>
+    <main class="shell shell-room">
+      <section class="room card room-standalone">
+        <div class="room-top">
+          <div>
+            <p class="eyebrow">Game Room</p>
+            <h1 class="room-headline" id="room-code-label">-----</h1>
+          </div>
+          <div class="top-actions">
+            <button class="ghost" id="to-lobby" type="button">В лобби</button>
+            <button class="ghost" id="forget-room" type="button">Забыть комнату</button>
+          </div>
+        </div>
+
+        <div class="share-grid">
+          <button class="secondary" id="copy-code" type="button">Копировать код</button>
+          <button class="secondary" id="copy-link" type="button">Копировать ссылку</button>
+        </div>
+
+        <p class="network-hint" id="share-link"></p>
+        <div class="status-panel" id="status-text">Подключаемся к комнате...</div>
+
+        <div class="players-grid">
+          <article class="player-card" id="player-x-card">
+            <div class="player-symbol player-symbol-x">X</div>
+            <div>
+              <h3 id="player-x-name">Ожидание...</h3>
+              <p id="player-x-meta">Создатель комнаты</p>
+            </div>
+          </article>
+          <article class="player-card" id="player-o-card">
+            <div class="player-symbol player-symbol-o">O</div>
+            <div>
+              <h3 id="player-o-name">Свободное место</h3>
+              <p id="player-o-meta">Друг может зайти по ссылке или коду</p>
+            </div>
+          </article>
+        </div>
+
+        <div class="board-wrap">
+          <div class="board" id="board" aria-label="Игровая доска"></div>
+        </div>
+
+        <div class="room-footer">
+          <div class="legend">
+            <span class="legend-dot legend-dot-hint"></span>
+            <span>Подсветка показывает фигуру, которая исчезнет следующей</span>
+          </div>
+          <button class="primary" id="restart-game" type="button">Новая партия</button>
+        </div>
+      </section>
+    </main>
+
+    <div class="toast hidden" id="toast"></div>
+    <script src="/runtime-config.js"></script>
+    <script src="/common.js"></script>
+    <script src="/room.js" defer></script>
+  </body>
+</html>

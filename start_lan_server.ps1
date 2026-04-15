@@ -3,6 +3,14 @@ $port = 8000
 $runtimeConfigPath = Join-Path $workspace ".xo-runtime.json"
 $runtimeScriptPath = Join-Path $workspace "public\\runtime-config.js"
 
+if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
+  Write-Host ""
+  Write-Host "Node.js is not installed or not available in PATH."
+  Write-Host "Install Node.js 18+ and run the script again."
+  Write-Host ""
+  exit 1
+}
+
 $adapters = @()
 $currentAdapter = $null
 
@@ -80,4 +88,4 @@ Write-Host "Запуск сервера..."
 Write-Host ""
 
 Set-Location $workspace
-python server.py
+node server.js

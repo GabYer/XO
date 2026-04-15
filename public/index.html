@@ -4,9 +4,13 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>XO Classic Online</title>
+    <meta http-equiv="refresh" content="0; url=lobby">
     <link rel="stylesheet" href="/styles.css">
   </head>
   <body>
+    <script>
+      window.location.replace("lobby" + window.location.search + window.location.hash);
+    </script>
     <div class="backdrop"></div>
     <main class="shell">
       <section class="hero card">
