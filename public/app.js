@@ -38,6 +38,44 @@ const state = {
   reconnectTimer: null,
 };
 
+function getRuntimeConfig() {
+  return window.XO_RUNTIME || {};
+}
+
+function normalizeBaseUrl(value) {
+  return String(value || "").trim().replace(/\/$/, "");
+}
+
+function getAppBaseUrl() {
+  const configuredBaseUrl = normalizeBaseUrl(getRuntimeConfig().baseUrl);
+  if (configuredBaseUrl) {
+    return `${configuredBaseUrl}/`;
+  }
+
+  const url = new URL(window.location.href);
+  let pathname = url.pathname;
+  const lastSegment = pathname.split("/").pop();
+  if (!pathname.endsWith("/") && !lastSegment.includes(".")) {
+    pathname = `${pathname}/`;
+  }
+  return `${url.origin}${pathname}`;
+}
+
+function getHistoryUrl(roomCode = null) {
+  const url = new URL(getAppBaseUrl());
+  if (roomCode) {
+    url.searchParams.set("room", roomCode);
+  }
+  return `${url.pathname}${url.search}`;
+}
+
+function buildApiUrl(path) {
+  const cleanPath = String(path || "").replace(/^\/+/, "");
+  const apiBaseUrl = normalizeBaseUrl(getRuntimeConfig().apiBaseUrl);
+  const baseUrl = apiBaseUrl ? `${apiBaseUrl}/` : getAppBaseUrl();
+  return new URL(cleanPath, baseUrl).toString();
+}
+
 function saveSession() {
   if (!state.room || !state.playerId) {
     localStorage.removeItem(STORAGE_KEY);
@@ -68,7 +106,7 @@ function clearSession() {
   saveSession();
   closeStream();
   roomSection.classList.add("hidden");
-  history.replaceState({}, "", "/");
+  history.replaceState({}, "", getHistoryUrl());
 }
 
 function closeStream() {
@@ -439,6 +477,198 @@ async function bootstrap() {
       localStorage.removeItem(STORAGE_KEY);
     }
     statusText.textContent = "Комната не найдена. Создай новую или введи другой код.";
+  }
+}
+
+async function apiRequest(url, options = {}) {
+  let response;
+
+  try {
+    response = await fetch(url, {
+      headers: {
+        "Content-Type": "application/json",
+        ...(options.headers || {}),
+      },
+      ...options,
+    });
+  } catch (error) {
+    throw new Error(
+      "Не удалось подключиться к API. Если хостинг статический, нужен отдельный backend или apiBaseUrl в runtime-config.js.",
+    );
+  }
+
+  const contentType = response.headers.get("Content-Type") || "";
+  const data = contentType.includes("application/json")
+    ? await response.json().catch(() => ({}))
+    : {};
+
+  if (!response.ok) {
+    if (data.error) {
+      throw new Error(data.error);
+    }
+    if (response.status === 404 || response.status === 405) {
+      throw new Error(
+        "API не найден. Интерфейс загрузился, но серверная часть комнат на этом хостинге недоступна.",
+      );
+    }
+    throw new Error(`Ошибка запроса (${response.status}).`);
+  }
+
+  return data;
+}
+
+function buildShareUrl(code) {
+  const url = new URL(getAppBaseUrl());
+  url.searchParams.set("room", code);
+  return url.toString();
+}
+
+function openRoom(data) {
+  state.room = data.room;
+  state.playerId = data.playerId || state.playerId;
+  state.shareUrl = buildShareUrl(state.room.code);
+  saveSession();
+  roomSection.classList.remove("hidden");
+  history.replaceState({}, "", getHistoryUrl(state.room.code));
+  renderRoom();
+  connectStream();
+}
+
+function connectStream() {
+  closeStream();
+
+  if (!state.room?.code) {
+    return;
+  }
+
+  const params = new URLSearchParams();
+  if (state.playerId) {
+    params.set("playerId", state.playerId);
+  }
+
+  const query = params.toString() ? `?${params.toString()}` : "";
+  const streamUrl = buildApiUrl(`api/rooms/${state.room.code}/stream${query}`);
+  const stream = new EventSource(streamUrl);
+  state.eventSource = stream;
+
+  stream.onmessage = (event) => {
+    const room = JSON.parse(event.data);
+    updateRoom(room);
+  };
+
+  stream.onerror = () => {
+    statusText.textContent = "Связь обновляется. Пытаемся переподключиться...";
+    stream.close();
+    state.eventSource = null;
+    if (!state.reconnectTimer) {
+      state.reconnectTimer = setTimeout(() => {
+        state.reconnectTimer = null;
+        connectStream();
+      }, 1500);
+    }
+  };
+}
+
+async function hydrateExistingRoom(roomCode, playerId) {
+  const params = new URLSearchParams();
+  if (playerId) {
+    params.set("playerId", playerId);
+  }
+
+  const query = params.toString() ? `?${params.toString()}` : "";
+  const room = await apiRequest(buildApiUrl(`api/rooms/${roomCode}${query}`));
+  state.room = room;
+  if (room.you?.id) {
+    state.playerId = room.you.id;
+  } else if (playerId) {
+    state.playerId = playerId;
+  }
+  state.shareUrl = buildShareUrl(room.code);
+  roomSection.classList.remove("hidden");
+  history.replaceState({}, "", getHistoryUrl(room.code));
+  renderRoom();
+  connectStream();
+}
+
+async function createRoom(event) {
+  event.preventDefault();
+  const nickname = createNicknameInput.value.trim();
+  if (nickname.length < 2) {
+    showToast("Ник должен быть не короче 2 символов.");
+    return;
+  }
+
+  try {
+    const data = await apiRequest(buildApiUrl("api/rooms"), {
+      method: "POST",
+      body: JSON.stringify({
+        nickname,
+        showVanishHint: showHintInput.checked,
+      }),
+    });
+    openRoom(data);
+    showToast("Комната создана.");
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function joinRoom(event) {
+  event.preventDefault();
+  const nickname = joinNicknameInput.value.trim();
+  const code = joinCodeInput.value.trim().toUpperCase();
+  if (nickname.length < 2 || code.length < 5) {
+    showToast("Заполни ник и корректный код комнаты.");
+    return;
+  }
+
+  try {
+    const data = await apiRequest(buildApiUrl(`api/rooms/${code}/join`), {
+      method: "POST",
+      body: JSON.stringify({ nickname }),
+    });
+    openRoom(data);
+    showToast("Ты в комнате.");
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function submitMove(cell) {
+  if (!state.room || !state.playerId) {
+    return;
+  }
+
+  try {
+    const data = await apiRequest(buildApiUrl(`api/rooms/${state.room.code}/move`), {
+      method: "POST",
+      body: JSON.stringify({
+        playerId: state.playerId,
+        cell,
+      }),
+    });
+    updateRoom(data.room);
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function restartGame() {
+  if (!state.room || !state.playerId) {
+    return;
+  }
+
+  try {
+    const data = await apiRequest(buildApiUrl(`api/rooms/${state.room.code}/restart`), {
+      method: "POST",
+      body: JSON.stringify({
+        playerId: state.playerId,
+      }),
+    });
+    updateRoom(data.room);
+    showToast("Новая партия запущена.");
+  } catch (error) {
+    showToast(error.message);
   }
 }
 

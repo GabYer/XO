@@ -15,9 +15,10 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PUBLIC_DIR = os.path.join(BASE_DIR, "public")
 RUNTIME_CONFIG_PATH = os.path.join(BASE_DIR, ".xo-runtime.json")
 HOST = "0.0.0.0"
-PORT = 8000
+PORT = int(os.environ.get("PORT", "8000"))
 MAX_MARKS_PER_PLAYER = 3
 ROOM_CODE_LENGTH = 5
+CORS_ALLOW_ORIGIN = os.environ.get("XO_CORS_ORIGIN", "").strip()
 WINNING_LINES = (
     (0, 1, 2),
     (3, 4, 5),
@@ -184,10 +185,20 @@ class XORequestHandler(BaseHTTPRequestHandler):
     def log_message(self, format_, *args):
         return
 
+    def do_OPTIONS(self):
+        self.send_response(HTTPStatus.NO_CONTENT)
+        self.write_cors_headers()
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
     def do_GET(self):
         parsed = urlparse(self.path)
         path = unquote(parsed.path)
 
+        if path == "/api/health":
+            return self.send_json({"ok": True, "rooms": len(rooms), "port": PORT})
         if path.startswith("/api/rooms/") and path.endswith("/stream"):
             return self.handle_stream(path, parsed)
         if path.startswith("/api/rooms/"):
@@ -239,11 +250,18 @@ class XORequestHandler(BaseHTTPRequestHandler):
     def send_json(self, payload, status=HTTPStatus.OK):
         raw = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
+        self.write_cors_headers()
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(raw)))
         self.send_header("Cache-Control", "no-store")
         self.end_headers()
         self.wfile.write(raw)
+
+    def write_cors_headers(self):
+        if not CORS_ALLOW_ORIGIN:
+            return
+        self.send_header("Access-Control-Allow-Origin", CORS_ALLOW_ORIGIN)
+        self.send_header("Vary", "Origin")
 
     def serve_static(self, path):
         if path in ("", "/"):
@@ -259,6 +277,7 @@ class XORequestHandler(BaseHTTPRequestHandler):
             raw = file_obj.read()
 
         self.send_response(HTTPStatus.OK)
+        self.write_cors_headers()
         self.send_header("Content-Type", f"{mime_type or 'application/octet-stream'}; charset=utf-8")
         self.send_header("Content-Length", str(len(raw)))
         self.send_header("Cache-Control", "no-store")
@@ -415,6 +434,7 @@ class XORequestHandler(BaseHTTPRequestHandler):
             listener["queue"].put(json.dumps(room.to_payload(player_id), ensure_ascii=False))
 
         self.send_response(HTTPStatus.OK)
+        self.write_cors_headers()
         self.send_header("Content-Type", "text/event-stream; charset=utf-8")
         self.send_header("Cache-Control", "no-store")
         self.send_header("Connection", "keep-alive")
@@ -444,8 +464,10 @@ class XORequestHandler(BaseHTTPRequestHandler):
         configured_base_url = load_runtime_base_url()
         if configured_base_url:
             return f"{configured_base_url}/?room={room_code}"
-        host = self.headers.get("Host", f"localhost:{PORT}")
-        return f"http://{host}/?room={room_code}"
+        forwarded_host = self.headers.get("X-Forwarded-Host")
+        host = forwarded_host or self.headers.get("Host", f"localhost:{PORT}")
+        proto = self.headers.get("X-Forwarded-Proto", "http")
+        return f"{proto}://{host}/?room={room_code}"
 
 
 def run():

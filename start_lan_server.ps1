@@ -60,10 +60,10 @@ $preferredAddress = $usableAdapters |
 if ($preferredAddress) {
   $baseUrl = "http://$preferredAddress`:$port"
   @{ baseUrl = $baseUrl } | ConvertTo-Json | Set-Content -Path $runtimeConfigPath -Encoding UTF8
-  "window.XO_RUNTIME = { baseUrl: '$baseUrl' };" | Set-Content -Path $runtimeScriptPath -Encoding UTF8
+  "window.XO_RUNTIME = { baseUrl: '$baseUrl', apiBaseUrl: '$baseUrl' };" | Set-Content -Path $runtimeScriptPath -Encoding UTF8
 } else {
   @{ baseUrl = "" } | ConvertTo-Json | Set-Content -Path $runtimeConfigPath -Encoding UTF8
-  "window.XO_RUNTIME = { baseUrl: '' };" | Set-Content -Path $runtimeScriptPath -Encoding UTF8
+  "window.XO_RUNTIME = { baseUrl: '', apiBaseUrl: '' };" | Set-Content -Path $runtimeScriptPath -Encoding UTF8
 }
 
 Write-Host ""
