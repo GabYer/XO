@@ -16,7 +16,6 @@ const copyLinkButton = document.getElementById("copy-link");
 const toLobbyButton = document.getElementById("to-lobby");
 const forgetRoomButton = document.getElementById("forget-room");
 const restartButton = document.getElementById("restart-game");
-const shareLinkText = document.getElementById("share-link");
 const toastElement = document.getElementById("toast");
 
 const playerNameElements = {
@@ -39,6 +38,7 @@ const state = {
   playerId: null,
   eventSource: null,
   reconnectTimer: null,
+  pollTimer: null,
 };
 
 function showToast(message) {
@@ -63,6 +63,25 @@ function closeStream() {
     clearTimeout(state.reconnectTimer);
     state.reconnectTimer = null;
   }
+}
+
+function stopPolling() {
+  if (state.pollTimer) {
+    clearInterval(state.pollTimer);
+    state.pollTimer = null;
+  }
+}
+
+function applyRoom(room) {
+  state.room = room;
+  if (room.you?.id) {
+    state.playerId = room.you.id;
+    saveSession({
+      roomCode: room.code,
+      playerId: room.you.id,
+    });
+  }
+  renderRoom();
 }
 
 function currentPlayer() {
@@ -92,7 +111,7 @@ function statusMessage() {
 
   const prefix = you && you.symbol === turn ? "Tvoy hod." : `Hodit ${turnPlayer.nickname}.`;
   if (showVanishHint && activeHint) {
-    return `${prefix} Podsvetka pokazyvaet figuru ${activeHint.symbol}, kotoraya ischeznet sleduyushchey.`;
+    return `${prefix} Sleduyushchey ischeznet ${activeHint.symbol} v kletke ${activeHint.cell + 1}.`;
   }
   return prefix;
 }
@@ -159,11 +178,34 @@ function renderRoom() {
   }
 
   roomTitle.textContent = state.room.code;
-  shareLinkText.textContent = shareLobbyUrl(state.room.code);
   statusText.textContent = statusMessage();
   restartButton.disabled = !state.room.canRestart;
   renderPlayers();
   renderBoard();
+}
+
+async function syncRoom(quiet = true) {
+  if (!state.room?.code) {
+    return;
+  }
+
+  try {
+    const room = await apiRequest(`api/rooms/${state.room.code}${state.playerId ? `?playerId=${state.playerId}` : ""}`);
+    if (!state.room || room.version !== state.room.version) {
+      applyRoom(room);
+    }
+  } catch (error) {
+    if (!quiet) {
+      showToast(error.message);
+    }
+  }
+}
+
+function startPolling() {
+  stopPolling();
+  state.pollTimer = setInterval(() => {
+    syncRoom(true);
+  }, 1200);
 }
 
 function connectStream() {
@@ -182,15 +224,7 @@ function connectStream() {
 
   state.eventSource.onmessage = (event) => {
     const room = JSON.parse(event.data);
-    state.room = room;
-    if (room.you?.id) {
-      state.playerId = room.you.id;
-      saveSession({
-        roomCode: room.code,
-        playerId: room.you.id,
-      });
-    }
-    renderRoom();
+    applyRoom(room);
   };
 
   state.eventSource.onerror = () => {
@@ -212,8 +246,7 @@ async function submitMove(cell) {
         cell,
       }),
     });
-    state.room = data.room;
-    renderRoom();
+    applyRoom(data.room);
   } catch (error) {
     showToast(error.message);
   }
@@ -227,8 +260,7 @@ async function restartGame() {
         playerId: state.playerId,
       }),
     });
-    state.room = data.room;
-    renderRoom();
+    applyRoom(data.room);
   } catch (error) {
     showToast(error.message);
   }
@@ -247,15 +279,9 @@ async function loadRoom() {
 
   try {
     const room = await apiRequest(`api/rooms/${roomCode}${playerId ? `?playerId=${playerId}` : ""}`);
-    state.room = room;
     state.playerId = room.you?.id || playerId || null;
-    if (state.playerId) {
-      saveSession({
-        roomCode: room.code,
-        playerId: state.playerId,
-      });
-    }
-    renderRoom();
+    applyRoom(room);
+    startPolling();
     connectStream();
   } catch (error) {
     showToast(error.message);
@@ -285,12 +311,21 @@ function bootstrap() {
   });
 
   toLobbyButton.addEventListener("click", () => {
+    closeStream();
+    stopPolling();
     window.location.href = buildPageUrl("lobby");
   });
 
   forgetRoomButton.addEventListener("click", () => {
+    closeStream();
+    stopPolling();
     clearSession();
     window.location.href = buildPageUrl("lobby");
+  });
+
+  window.addEventListener("beforeunload", () => {
+    closeStream();
+    stopPolling();
   });
 
   restartButton.addEventListener("click", restartGame);

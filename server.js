@@ -139,7 +139,11 @@ function roomPayload(room, playerId = null) {
 
 function broadcastRoom(room) {
   for (const listener of [...room.listeners]) {
-    listener.res.write(`data: ${JSON.stringify(roomPayload(room, listener.playerId))}\n\n`);
+    try {
+      listener.res.write(`data: ${JSON.stringify(roomPayload(room, listener.playerId))}\n\n`);
+    } catch (error) {
+      room.listeners.delete(listener);
+    }
   }
 }
 
@@ -448,10 +452,21 @@ async function handleApi(req, res, url) {
     writeCorsHeaders(res);
     res.writeHead(200, {
       "Content-Type": "text/event-stream; charset=utf-8",
-      "Cache-Control": "no-store",
+      "Cache-Control": "no-cache, no-store, must-revalidate, no-transform",
+      Pragma: "no-cache",
+      Expires: "0",
       Connection: "keep-alive",
+      "X-Accel-Buffering": "no",
     });
-    res.write("\n");
+    req.socket?.setTimeout(0);
+    res.socket?.setNoDelay(true);
+    res.socket?.setKeepAlive(true, 15000);
+    if (typeof res.flushHeaders === "function") {
+      res.flushHeaders();
+    }
+
+    res.write("retry: 1500\n");
+    res.write(`: ${" ".repeat(2048)}\n\n`);
     res.write(`data: ${JSON.stringify(roomPayload(room, playerId))}\n\n`);
     broadcastRoom(room);
 
