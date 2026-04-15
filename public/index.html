@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>XO Classic Online</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <div class="backdrop"></div>
+    <main class="shell">
+      <section class="hero card">
+        <p class="eyebrow">Network Tic-Tac-Toe</p>
+        <h1>XO Classic Online</h1>
+        <p class="lead">
+          Классические крестики-нолики, но у каждого игрока на поле может жить только 3 фигуры.
+          Ставишь четвёртую, и самая старая исчезает. Можно заранее включить подсказку, какая
+          фигура уйдёт следующей.
+        </p>
+        <div class="hero-tags">
+          <span>Онлайн-комнаты</span>
+          <span>Вход по коду</span>
+          <span>Ссылка для друга</span>
+          <span>Ники игроков</span>
+        </div>
+      </section>
+
+      <section class="lobby card">
+        <div class="panel-header">
+          <h2>Лобби</h2>
+          <p>Создай комнату или зайди по коду.</p>
+        </div>
+
+        <form id="create-form" class="stack">
+          <label class="field">
+            <span>Твой ник</span>
+            <input id="create-nickname" name="nickname" maxlength="24" placeholder="Например, Gabi" required>
+          </label>
+
+          <label class="toggle">
+            <input id="show-hint" type="checkbox" checked>
+            <span>
+              <strong>Подсказка исчезающей фигуры</strong>
+              <small>Подсвечивать на доске фигуру, которая исчезнет на следующем ходе игрока.</small>
+            </span>
+          </label>
+
+          <button class="primary" type="submit">Создать комнату</button>
+        </form>
+
+        <div class="divider"><span>или</span></div>
+
+        <form id="join-form" class="stack">
+          <label class="field">
+            <span>Твой ник</span>
+            <input id="join-nickname" name="nickname" maxlength="24" placeholder="Например, Opponent" required>
+          </label>
+
+          <label class="field">
+            <span>Код комнаты</span>
+            <input id="join-code" name="code" maxlength="5" placeholder="AB12C" required>
+          </label>
+
+          <button class="secondary" type="submit">Войти в комнату</button>
+        </form>
+
+        <p id="lobby-note" class="note">
+          Если откроешь ссылку-приглашение, код комнаты подставится автоматически.
+        </p>
+      </section>
+
+      <section class="room card hidden" id="room-section">
+        <div class="room-top">
+          <div>
+            <p class="eyebrow">Комната</p>
+            <h2 id="room-code-label">-----</h2>
+          </div>
+          <button class="ghost" id="leave-room" type="button">Выйти</button>
+        </div>
+
+        <div class="share-grid">
+          <button class="secondary" id="copy-code" type="button">Копировать код</button>
+          <button class="secondary" id="copy-link" type="button">Копировать ссылку</button>
+        </div>
+
+        <p class="network-hint" id="network-hint"></p>
+
+        <div class="status-panel" id="status-text">Подключаемся к комнате...</div>
+
+        <div class="players-grid" id="players-grid">
+          <article class="player-card" id="player-x-card">
+            <div class="player-symbol player-symbol-x">X</div>
+            <div>
+              <h3 id="player-x-name">Ожидание...</h3>
+              <p id="player-x-meta">Хозяин комнаты</p>
+            </div>
+          </article>
+
+          <article class="player-card" id="player-o-card">
+            <div class="player-symbol player-symbol-o">O</div>
+            <div>
+              <h3 id="player-o-name">Свободное место</h3>
+              <p id="player-o-meta">Друг может зайти по коду или ссылке</p>
+            </div>
+          </article>
+        </div>
+
+        <div class="board-wrap">
+          <div class="board" id="board" aria-label="Игровая доска"></div>
+        </div>
+
+        <div class="room-footer">
+          <div class="legend">
+            <span class="legend-dot legend-dot-hint"></span>
+            <span>Подсветка показывает фигуру, которая исчезнет следующей</span>
+          </div>
+          <button class="primary" id="restart-game" type="button">Новая партия</button>
+        </div>
+      </section>
+    </main>
+
+    <div class="toast hidden" id="toast"></div>
+    <script src="/runtime-config.js"></script>
+    <script src="/app.js" defer></script>
+  </body>
+</html>
