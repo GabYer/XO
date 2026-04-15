@@ -11,51 +11,54 @@
     <main class="shell shell-room">
       <section class="room card room-standalone">
         <div class="room-top">
-          <div>
+          <div class="room-identity">
             <p class="eyebrow">Game Room</p>
             <h1 class="room-headline" id="room-code-label">-----</h1>
           </div>
           <div class="top-actions">
-            <button class="ghost" id="to-lobby" type="button">В лобби</button>
-            <button class="ghost" id="forget-room" type="button">Забыть комнату</button>
+            <button class="secondary small-action" id="copy-code" type="button">Код</button>
+            <button class="secondary small-action" id="copy-link" type="button">Ссылка</button>
+            <button class="ghost small-action" id="to-lobby" type="button">Лобби</button>
+            <button class="ghost small-action" id="forget-room" type="button">Выйти</button>
           </div>
         </div>
 
-        <div class="share-grid">
-          <button class="secondary" id="copy-code" type="button">Копировать код</button>
-          <button class="secondary" id="copy-link" type="button">Копировать ссылку</button>
-        </div>
+        <div class="room-stage">
+          <div class="board-stage">
+            <div class="status-panel status-panel-compact" id="status-text">Подключаемся к комнате...</div>
 
-        <p class="network-hint" id="share-link"></p>
-        <div class="status-panel" id="status-text">Подключаемся к комнате...</div>
-
-        <div class="players-grid">
-          <article class="player-card" id="player-x-card">
-            <div class="player-symbol player-symbol-x">X</div>
-            <div>
-              <h3 id="player-x-name">Ожидание...</h3>
-              <p id="player-x-meta">Создатель комнаты</p>
+            <div class="board-wrap">
+              <div class="board" id="board" aria-label="Игровая доска"></div>
             </div>
-          </article>
-          <article class="player-card" id="player-o-card">
-            <div class="player-symbol player-symbol-o">O</div>
-            <div>
-              <h3 id="player-o-name">Свободное место</h3>
-              <p id="player-o-meta">Друг может зайти по ссылке или коду</p>
-            </div>
-          </article>
-        </div>
-
-        <div class="board-wrap">
-          <div class="board" id="board" aria-label="Игровая доска"></div>
-        </div>
-
-        <div class="room-footer">
-          <div class="legend">
-            <span class="legend-dot legend-dot-hint"></span>
-            <span>Подсветка показывает фигуру, которая исчезнет следующей</span>
           </div>
-          <button class="primary" id="restart-game" type="button">Новая партия</button>
+
+          <aside class="room-sidebar">
+            <div class="players-grid players-grid-compact">
+              <article class="player-card player-card-compact" id="player-x-card">
+                <div class="player-symbol player-symbol-x">X</div>
+                <div>
+                  <h3 id="player-x-name">Ожидание...</h3>
+                  <p id="player-x-meta">Создатель комнаты</p>
+                </div>
+              </article>
+
+              <article class="player-card player-card-compact" id="player-o-card">
+                <div class="player-symbol player-symbol-o">O</div>
+                <div>
+                  <h3 id="player-o-name">Свободное место</h3>
+                  <p id="player-o-meta">Друг может зайти по ссылке или коду</p>
+                </div>
+              </article>
+            </div>
+
+            <div class="room-footer room-footer-compact">
+              <button class="primary" id="restart-game" type="button">Новая партия</button>
+              <div class="legend legend-compact">
+                <span class="legend-dot legend-dot-hint"></span>
+                <span>Подсказка показывает фигуру, которая исчезнет следующей</span>
+              </div>
+            </div>
+          </aside>
         </div>
       </section>
     </main>

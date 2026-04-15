@@ -515,3 +515,96 @@ button:disabled {
 .room-standalone {
   min-height: calc(100vh - 56px);
 }
+
+.shell-room {
+  width: min(1320px, calc(100% - 32px));
+}
+
+.small-action {
+  min-width: 104px;
+  padding: 12px 16px;
+}
+
+.room-identity {
+  min-width: 0;
+}
+
+.room-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 24px;
+  align-items: start;
+}
+
+.board-stage {
+  display: grid;
+  gap: 16px;
+}
+
+.room-sidebar {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+}
+
+.status-panel-compact {
+  width: min(100%, 620px);
+  margin: 0 auto;
+  text-align: center;
+}
+
+.players-grid-compact {
+  grid-template-columns: 1fr;
+  margin-bottom: 0;
+}
+
+.player-card-compact {
+  padding: 14px;
+}
+
+.room-footer-compact {
+  grid-template-columns: 1fr;
+  align-items: stretch;
+}
+
+.legend-compact {
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+
+.room-standalone .board-wrap {
+  margin: 0;
+}
+
+.room-standalone .board {
+  width: min(100%, 680px);
+  gap: 14px;
+}
+
+@media (max-width: 1100px) {
+  .room-stage {
+    grid-template-columns: 1fr;
+  }
+
+  .room-sidebar {
+    order: -1;
+  }
+
+  .players-grid-compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .top-actions {
+    justify-content: stretch;
+  }
+
+  .small-action {
+    flex: 1 1 calc(50% - 10px);
+  }
+
+  .players-grid-compact {
+    grid-template-columns: 1fr;
+  }
+}
